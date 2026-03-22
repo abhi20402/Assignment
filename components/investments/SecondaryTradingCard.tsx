@@ -136,7 +136,7 @@ export default function SecondaryTradingCard({ card, basePath = '/investing/seco
             </Typography>
           </Box>
           <Box className={styles.trendGraphContainer}>
-            <TrendGraph data={card.trendData} isPositive={card.isPositive} width={140} height={70} />
+            <TrendGraph data={card.trendData} isPositive={card.isPositive} width={140} height={70} variant="compact" />
           </Box>
         </Box>
 

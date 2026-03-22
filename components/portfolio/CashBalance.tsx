@@ -11,6 +11,8 @@ import styles from './CashBalance.module.css'
 type PortfolioResponse = {
   totalValue: number
   cashBalance: number
+  availableCash: number
+  reservedCash: number
   holdingsValue: number
   positions: any[]
   openOrders: any[]
@@ -23,6 +25,8 @@ export default function CashBalance() {
   const [portfolio, setPortfolio] = useState<PortfolioResponse>({
     totalValue: 0,
     cashBalance: 0,
+    availableCash: 0,
+    reservedCash: 0,
     holdingsValue: 0,
     positions: [],
     openOrders: [],
@@ -44,6 +48,8 @@ export default function CashBalance() {
           setPortfolio({
             totalValue: Number(data.totalValue) || 0,
             cashBalance: Number(data.cashBalance) || 0,
+            availableCash: Number(data.availableCash) || 0,
+            reservedCash: Number(data.reservedCash) || 0,
             holdingsValue: Number(data.holdingsValue) || 0,
             positions: data.positions || [],
             openOrders: data.openOrders || [],
@@ -63,7 +69,7 @@ export default function CashBalance() {
     <Box className={styles.content}>
       <PortfolioSummaryCard
         totalValue={portfolio.totalValue}
-        cashAvailable={portfolio.cashBalance}
+        cashAvailable={portfolio.availableCash}
         investedAmount={portfolio.holdingsValue}
         onInvestedClick={() => setIsPositionsExpanded(!isPositionsExpanded)}
       />

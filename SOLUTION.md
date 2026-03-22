@@ -1,5 +1,8 @@
 # SOLUTION
 
+## Screen recording
+- https://www.loom.com/share/a5bb64b94e1940108706d8a5258904bd
+
 ## What I built
 I implemented the marketplace backend and connected it to the existing UI and portfolio flows without changing the product's core behavior.
 
@@ -9,11 +12,14 @@ I implemented the marketplace backend and connected it to the existing UI and po
 - Added `POST /api/trading/orders` to place buy and sell orders with validation
 - Added `DELETE /api/trading/orders/[orderId]` to cancel open orders
 - Added `GET /api/trading/portfolio` to return portfolio summary, positions, orders, and trades
+- Updated trade execution settlement so matched fills update cash balances for both counterparties
+- Fixed position handling so partial sells preserve the remaining holding's average cost basis
 
 ### Portfolio integration
 - Connected portfolio summary to `trading_balances` and `trading_holdings`
 - Updated `CashBalance.tsx` to load real trading portfolio data
 - Updated `InvestmentsSection.tsx` to show actual positions instead of old investment purchase records
+- Expanded account activity history to show trading orders, executed trades, and cash transfers together
 
 ### Transfers
 - Updated deposit flow to increase trading cash balance

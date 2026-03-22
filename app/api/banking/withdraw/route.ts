@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getAuthUserId } from '@/lib/auth'
 import { findUserById } from '@/lib/userStore'
 import { createPayment, getPaymentMethod } from '@/lib/paymentStore'
-import { getTradingCashBalance, adjustTradingCashBalance } from '@/lib/trading'
+import { adjustTradingCashBalance, getAvailableTradingCash, getTradingCashBalance } from '@/lib/trading'
 
 export async function POST(request: NextRequest) {
   try {
@@ -29,7 +29,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Payment method not available.' }, { status: 400 })
     }
 
-    const availableCash = getTradingCashBalance(userId)
+    const availableCash = getAvailableTradingCash(userId)
     if (availableCash + 0.0001 < amount) {
       return NextResponse.json({ error: `Insufficient available cash. Available ${availableCash.toFixed(2)}` }, { status: 400 })
     }
@@ -48,7 +48,11 @@ export async function POST(request: NextRequest) {
 
     adjustTradingCashBalance(userId, -amount)
 
-    return NextResponse.json({ payment, cashBalance: getTradingCashBalance(userId) })
+    return NextResponse.json({
+      payment,
+      cashBalance: getTradingCashBalance(userId),
+      availableCash: getAvailableTradingCash(userId),
+    })
   } catch (error: any) {
     return NextResponse.json({ error: error?.message || 'Failed to create withdrawal' }, { status: 500 })
   }

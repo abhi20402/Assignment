@@ -9,7 +9,7 @@ import styles from './Banking.module.css'
 export default function Banking() {
   const router = useRouter()
   const [todayDepositTotal, setTodayDepositTotal] = useState(0)
-  const [cashBalance, setCashBalance] = useState(0)
+  const [availableCash, setAvailableCash] = useState(0)
 
   useEffect(() => {
     const fetchBankingData = async () => {
@@ -24,7 +24,7 @@ export default function Banking() {
         }
         if (balanceResponse.ok) {
           const data = await balanceResponse.json()
-          setCashBalance(Number(data.balance) || 0)
+          setAvailableCash(Number(data.availableBalance ?? data.balance) || 0)
         }
       } catch (error) {
         console.error('Error fetching banking data:', error)
@@ -42,7 +42,7 @@ export default function Banking() {
     },
     {
       title: 'Withdraw Funds',
-      status: `$${cashBalance.toFixed(2)} available`,
+      status: `$${availableCash.toFixed(2)} available`,
       onClick: () => router.push('/account/banking/withdraw'),
     },
     {

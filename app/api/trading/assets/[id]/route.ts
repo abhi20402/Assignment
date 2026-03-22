@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuthUserId } from '@/lib/auth'
 import {
+  getAvailableTradingCash,
   getHolding,
   getLatestTrades,
   getOpenOrderBook,
   getTradingAssetByIdOrSlug,
   getUserOrders,
-  getTradingCashBalance,
 } from '@/lib/trading'
 
 export const dynamic = 'force-dynamic'
@@ -28,7 +28,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
     if (userId) {
       payload.userPosition = getHolding(userId, asset.symbol)
       payload.userOrders = getUserOrders(userId, { symbol: asset.symbol, limit: 20 })
-      payload.cashBalance = getTradingCashBalance(userId)
+      payload.availableCash = getAvailableTradingCash(userId)
     }
 
     return NextResponse.json(payload)

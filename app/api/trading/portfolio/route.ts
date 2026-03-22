@@ -9,5 +9,9 @@ export async function GET(request: NextRequest) {
   if (!userId) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
-  return NextResponse.json(getPortfolioSummary(userId))
+
+  const { searchParams } = new URL(request.url)
+  const historyLimit = Number(searchParams.get('historyLimit') || 10)
+
+  return NextResponse.json(getPortfolioSummary(userId, { historyLimit }))
 }

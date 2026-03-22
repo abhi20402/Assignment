@@ -33,7 +33,7 @@ export default function WithdrawFunds() {
         setSelectedMethodId(defaultMethod?.id || null)
         if (balanceResponse.ok) {
           const balanceData = await balanceResponse.json()
-          setBalance(Number(balanceData.balance) || 0)
+          setBalance(Number(balanceData.availableBalance ?? balanceData.balance) || 0)
         }
       } catch (err) {
         console.error('Error loading withdraw page:', err)
@@ -61,7 +61,7 @@ export default function WithdrawFunds() {
       })
       const data = await response.json()
       if (!response.ok) throw new Error(data.error || 'Failed to withdraw funds')
-      setBalance(Number(data.cashBalance) || 0)
+      setBalance(Number(data.availableCash ?? data.cashBalance) || 0)
       setMessage('Withdrawal completed successfully.')
     } catch (err: any) {
       setError(err?.message || 'Failed to withdraw funds')

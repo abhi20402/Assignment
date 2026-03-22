@@ -1,5 +1,6 @@
 import crypto from 'crypto'
 import db from '@/lib/db'
+import { adjustTradingCashBalance } from '@/lib/trading'
 
 /**
  * Order Matching Engine
@@ -36,6 +37,10 @@ export function upsertHolding(userId: string, symbol: string, deltaShares: numbe
     | undefined
 
   if (!holding) {
+    if (deltaShares < 0) {
+      throw new Error(`Cannot sell ${symbol} without an existing position`)
+    }
+
     db.prepare(
       `INSERT INTO trading_holdings (id, user_id, symbol, shares, avg_cost, created_at, updated_at)
        VALUES (?, ?, ?, ?, ?, datetime('now'), datetime('now'))`
@@ -44,8 +49,21 @@ export function upsertHolding(userId: string, symbol: string, deltaShares: numbe
   }
 
   const newShares = holding.shares + deltaShares
+  if (newShares < 0) {
+    throw new Error(`Cannot reduce ${symbol} below zero shares`)
+  }
+
   if (newShares === 0) {
     db.prepare('DELETE FROM trading_holdings WHERE user_id = ? AND symbol = ?').run(userId, symbol)
+    return
+  }
+
+  if (deltaShares < 0) {
+    db.prepare(
+      `UPDATE trading_holdings
+       SET shares = ?, updated_at = datetime('now')
+       WHERE user_id = ? AND symbol = ?`
+    ).run(newShares, userId, symbol)
     return
   }
 
@@ -126,6 +144,10 @@ export function matchOrder(
 
       upsertHolding(buyerId, symbol, fillQty, tradePrice)
       upsertHolding(sellerId, symbol, -fillQty, tradePrice)
+
+      const gross = fillQty * tradePrice
+      adjustTradingCashBalance(buyerId, -gross)
+      adjustTradingCashBalance(sellerId, gross)
 
       remaining -= fillQty
     }

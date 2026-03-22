@@ -118,7 +118,11 @@ export default function LandingPage() {
           <Grid container spacing={2} sx={{ mt: 2 }}>
             {secondaryInvestments.map((card) => (
               <Grid item xs={12} sm={6} md={4} key={card.id}>
-                <SecondaryTradingCard card={card} basePath="/investing/secondary-trading" />
+                <SecondaryTradingCard
+                  card={card}
+                  basePath="/investing/secondary-trading"
+                  isAuthenticated={isAuthenticated}
+                />
               </Grid>
             ))}
           </Grid>

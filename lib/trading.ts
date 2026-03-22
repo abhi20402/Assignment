@@ -21,6 +21,15 @@ export type TradingAsset = {
   dailyHistory?: Array<Record<string, any>>
 }
 
+type OrderBookLevel = {
+  price: number
+  quantity: number
+}
+
+type PortfolioSummaryOptions = {
+  historyLimit?: number
+}
+
 export function getAllTradingAssets(): TradingAsset[] {
   const dailyTemplate = (secondaryTradingAssets as any).templates?.dailyHistory || []
 
@@ -74,6 +83,12 @@ export function ensureTradingBalance(userId: string) {
 export function getTradingCashBalance(userId: string): number {
   const row = ensureTradingBalance(userId)
   return Number(row?.cash_balance || 0)
+}
+
+export function getAvailableTradingCash(userId: string): number {
+  const settledCash = getTradingCashBalance(userId)
+  const reservedCash = getReservedBuyAmount(userId)
+  return Number(Math.max(settledCash - reservedCash, 0).toFixed(2))
 }
 
 export function adjustTradingCashBalance(userId: string, delta: number) {
@@ -170,7 +185,7 @@ export function getOpenOrderBook(symbol: string) {
     GROUP BY price
     ORDER BY price ASC
     LIMIT 10
-  `).all(symbol) as any[]
+  `).all(symbol) as OrderBookLevel[]
 
   const bids = db.prepare(`
     SELECT price, SUM(remaining_quantity) as quantity
@@ -182,7 +197,7 @@ export function getOpenOrderBook(symbol: string) {
     GROUP BY price
     ORDER BY price DESC
     LIMIT 10
-  `).all(symbol) as any[]
+  `).all(symbol) as OrderBookLevel[]
 
   // Always merge real orders with template to maintain a full book
   const asset = getAssetBySymbol(symbol)
@@ -193,26 +208,26 @@ export function getOpenOrderBook(symbol: string) {
 
   // If there are real orders, append template orders to fill the book
   if (asset && template) {
-    const templateAsks = (template.asks || []).map((entry: any) => ({
+    const templateAsks: OrderBookLevel[] = (template.asks || []).map((entry: any) => ({
       price: Number((entry.priceMultiplier * asset.basePrice).toFixed(2)),
       quantity: entry.size,
     }))
-    const templateBids = (template.bids || []).map((entry: any) => ({
+    const templateBids: OrderBookLevel[] = (template.bids || []).map((entry: any) => ({
       price: Number((entry.priceMultiplier * asset.basePrice).toFixed(2)),
       quantity: entry.size,
     }))
 
     // Merge: add real orders + template orders, deduplicate by price
     if (asks.length > 0) {
-      const realPrices = new Set(asks.map(a => a.price))
-      finalAsks = [...asks, ...templateAsks.filter(t => !realPrices.has(t.price))].slice(0, 10)
+      const realPrices = new Set<number>(asks.map((ask) => ask.price))
+      finalAsks = [...asks, ...templateAsks.filter((level) => !realPrices.has(level.price))].slice(0, 10)
     } else {
       finalAsks = templateAsks
     }
 
     if (bids.length > 0) {
-      const realPrices = new Set(bids.map(b => b.price))
-      finalBids = [...bids, ...templateBids.filter(t => !realPrices.has(t.price))].slice(0, 10)
+      const realPrices = new Set<number>(bids.map((bid) => bid.price))
+      finalBids = [...bids, ...templateBids.filter((level) => !realPrices.has(level.price))].slice(0, 10)
     } else {
       finalBids = templateBids
     }
@@ -248,9 +263,13 @@ export function getReservedSellShares(userId: string, symbol: string): number {
   return Number(row?.reserved || 0)
 }
 
-export function getPortfolioSummary(userId: string) {
+export function getPortfolioSummary(userId: string, options: PortfolioSummaryOptions = {}) {
   const cashBalance = getTradingCashBalance(userId)
+  const availableCash = getAvailableTradingCash(userId)
+  const reservedCash = Number((cashBalance - availableCash).toFixed(2))
   const holdings = getUserHoldings(userId)
+  const requestedHistoryLimit = Number.isFinite(options.historyLimit) ? Number(options.historyLimit) : 10
+  const historyLimit = Math.min(Math.max(requestedHistoryLimit, 1), 100)
 
   const positions = holdings.map((holding) => {
     const asset = getAssetBySymbol(holding.symbol)
@@ -275,11 +294,13 @@ export function getPortfolioSummary(userId: string) {
 
   return {
     cashBalance: Number(cashBalance.toFixed(2)),
+    availableCash,
+    reservedCash,
     holdingsValue: Number(holdingsValue.toFixed(2)),
     totalValue: Number((cashBalance + holdingsValue).toFixed(2)),
     positions,
     openOrders,
-    recentOrders: getUserOrders(userId, { limit: 10 }),
-    recentTrades: getUserTrades(userId, { limit: 10 }),
+    recentOrders: getUserOrders(userId, { limit: historyLimit }),
+    recentTrades: getUserTrades(userId, { limit: historyLimit }),
   }
 }

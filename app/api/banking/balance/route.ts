@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { findUserById } from '@/lib/userStore'
 import { getAuthUserId } from '@/lib/auth'
-import { getTradingCashBalance } from '@/lib/trading'
+import { getAvailableTradingCash, getTradingCashBalance } from '@/lib/trading'
 
 export const dynamic = 'force-dynamic'
 
@@ -18,7 +18,8 @@ export async function GET(request: NextRequest) {
     }
 
     const balance = getTradingCashBalance(userId)
-    return NextResponse.json({ balance })
+    const availableBalance = getAvailableTradingCash(userId)
+    return NextResponse.json({ balance, availableBalance })
   } catch (error: any) {
     return NextResponse.json({ error: error?.message || 'Failed to fetch cash balance' }, { status: 500 })
   }

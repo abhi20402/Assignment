@@ -50,6 +50,7 @@ body {
 body {
   /*background-color: var(--bg-black);*/
   /*color: var(--text-white);*/
+  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
 }
 
 /* Ensure smooth scrolling */

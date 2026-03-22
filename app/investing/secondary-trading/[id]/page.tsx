@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Header from '@/components/Header'
 import TrendGraph from '@/components/investments/TrendGraph'
@@ -31,7 +31,7 @@ type DetailResponse = {
   recentTrades: any[]
   userPosition?: any
   userOrders?: any[]
-  cashBalance?: number
+  availableCash?: number
 }
 
 export default function SecondaryTradingDetailPage() {
@@ -46,7 +46,9 @@ export default function SecondaryTradingDetailPage() {
 
   const id = Array.isArray(params.id) ? params.id[0] : params.id
 
-  const fetchDetail = async () => {
+  const fetchDetail = useCallback(async () => {
+    if (!id) return
+
     try {
       setLoading(true)
       const response = await fetch(`/api/trading/assets/${id}`)
@@ -61,11 +63,11 @@ export default function SecondaryTradingDetailPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [id])
 
   useEffect(() => {
-    if (id) fetchDetail()
-  }, [id])
+    void fetchDetail()
+  }, [fetchDetail])
 
   const symbol = useMemo(() => (data?.asset ? getSecondaryTradingSymbol(data.asset.title, data.asset.symbol) : ''), [data])
 
@@ -149,7 +151,7 @@ export default function SecondaryTradingDetailPage() {
             </Box>
           </Box>
           <Typography sx={{ color: '#ffffff', fontWeight: 700, fontSize: '16px' }}>
-            Cash: {formatCurrency(data.cashBalance ?? 0)}
+            Cash Available: {formatCurrency(data.availableCash ?? 0)}
           </Typography>
         </Box>
         <Typography variant="h3" sx={{ fontWeight: 700, color: '#ffffff', mt: 1 }}>{formatCurrency(data.asset.currentValue)}</Typography>

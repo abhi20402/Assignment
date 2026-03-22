@@ -4,7 +4,6 @@ import db from '@/lib/db'
 import { getAuthUserId } from '@/lib/auth'
 import { matchOrder } from '@/lib/matchingEngine'
 import {
-  adjustTradingCashBalance,
   getAssetBySymbol,
   getHolding,
   getPortfolioSummary,
@@ -27,7 +26,11 @@ export async function GET(request: NextRequest) {
   if (!userId) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
-  return NextResponse.json(getPortfolioSummary(userId))
+
+  const { searchParams } = new URL(request.url)
+  const historyLimit = Number(searchParams.get('historyLimit') || 10)
+
+  return NextResponse.json(getPortfolioSummary(userId, { historyLimit }))
 }
 
 export async function POST(request: NextRequest) {
@@ -104,16 +107,6 @@ export async function POST(request: NextRequest) {
 
     const afterTrades = getUserTrades(userId, { limit: 200 })
     const newTrades = afterTrades.filter((trade) => !beforeTrades.includes(trade.id))
-
-    if (newTrades.length) {
-      const cashDelta = newTrades.reduce((sum, trade) => {
-        const gross = Number(trade.quantity) * Number(trade.price)
-        return sum + (trade.user_side === 'buy' ? -gross : gross)
-      }, 0)
-      if (cashDelta !== 0) {
-        adjustTradingCashBalance(userId, cashDelta)
-      }
-    }
 
     const placedOrder = db.prepare('SELECT * FROM trading_orders WHERE id = ?').get(result.orderId)
 
